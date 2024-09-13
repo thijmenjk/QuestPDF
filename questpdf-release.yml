@@ -1,0 +1,72 @@
+name: '$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)'
+
+trigger:
+  branches:
+    include:
+    - release/*
+    - hotfix/*
+  
+pool:
+  vmImage: 'windows-latest'
+  
+variables:
+  buildConfiguration: Release
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  NUGET_XMLDOC_MODE: 'skip'
+  NUGET_PACKAGES: $(Pipeline.Workspace)/.nuget/packages
+  
+stages:
+  - stage: Build
+    jobs:
+    - job: BuildQuestPDF
+      displayName: Build QuestPDF
+      steps:
+        - task: UseDotNet@2
+          displayName: 'Use dotnet 8.0.x'
+          inputs:
+            version: 8.0.x
+        - task: NuGetAuthenticate@1
+          displayName: 'NuGet Authenticate'
+        - task: DotNetCoreCLI@2
+          displayName: Restore
+          inputs:
+            command: restore
+            projects: '**/*.csproj'
+            vstsFeed: 'd876f920-6f48-4156-a250-d1a90bd5b2cd'
+        - task: DotNetCoreCLI@2
+          displayName: Build
+          inputs:
+            projects: '**/*.sln'
+            arguments: '--configuration $(BuildConfiguration) --no-restore'
+        - task: DotNetCoreCLI@2
+          displayName: 'Run tests'
+          inputs:
+            command: 'test'
+            publishTestResults: true
+            projects: '**/*Tests*.csproj'
+        - task: DotNetCoreCLI@2
+          displayName: Pack QuestPDF
+          inputs:
+            command: custom
+            projects: '**/QuestPDF/*.csproj'
+            custom: pack
+            arguments: '--output $(Build.ArtifactStagingDirectory)/nuget --no-build /p:Configuration=$(BuildConfiguration) /p:PackageVersion=$(Build.BuildNumber) --no-restore --no-build'
+            feedsToUse: config
+            versioningScheme: byBuildNumber
+            buildProperties: 'SymbolPackageFormat=snupkg'
+        - task: NuGetCommand@2
+          displayName: 'NuGet push'
+          inputs:
+            command: push
+            packagesToPush: '$(Build.ArtifactStagingDirectory)/nuget/*.nupkg'
+            publishVstsFeed: 'd876f920-6f48-4156-a250-d1a90bd5b2cd'
+            allowPackageConflicts: true
+        - task: NuGetCommand@2
+          displayName: 'NuGet push symbols'
+          inputs:
+            command: push
+            packagesToPush: '$(build.artifactstagingdirectory)/nuget/*.snupkg'
+            publishVstsFeed: 'd876f920-6f48-4156-a250-d1a90bd5b2cd'
+            allowPackageConflicts: true
+        - task: git-tag-on-release-task@9
+          displayName: 'Tag Artifacts'

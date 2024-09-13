@@ -2,8 +2,8 @@
     <PropertyGroup>
         <Authors>MarcinZiabek</Authors>
         <Company>CodeFlint</Company>
-        <PackageId>QuestPDF</PackageId>
-        <Version>2024.7.3</Version>
+        <PackageId>CheckNet.QuestPDF</PackageId>
+        <Version>100</Version>
         <PackageDescription>QuestPDF is an open-source, modern and battle-tested library that can help you with generating PDF documents by offering friendly, discoverable and predictable C# fluent API. Easily generate PDF reports, invoices, exports, etc.</PackageDescription>
         <PackageReleaseNotes>$([System.IO.File]::ReadAllText("$(MSBuildProjectDirectory)/Resources/ReleaseNotes.txt"))</PackageReleaseNotes>
         <LangVersion>12</LangVersion>
